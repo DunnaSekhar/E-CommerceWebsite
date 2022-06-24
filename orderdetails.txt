@@ -1,0 +1,1019 @@
+orderitem.java
+---------------
+
+@Entity
+@Table(name = "order_item")
+public class OrderItem implements Serializable {
+
+	/**
+	 * 
+	 */
+	private static final long serialVersionUID = 1L;
+	
+	@Id
+	@GeneratedValue(strategy = GenerationType.IDENTITY)
+	private int id;
+	
+	@OneToOne
+	private Product product;
+	
+	@ManyToOne
+	@JoinColumn(name = "order_id")
+	private OrderDetail orderDetail;
+
+	public OrderDetail getOrderDetail() {
+		return orderDetail;
+	}
+
+	public void setOrderDetail(OrderDetail orderDetail) {
+		this.orderDetail = orderDetail;
+	}
+
+	@Column (name = "buying_price")
+	private double buyingPrice;
+	
+	@Column (name = "product_count")
+	private int productCount;
+	
+	private double total;
+
+	
+	public int getId() {
+		return id;
+	}
+
+	public void setId(int id) {
+		this.id = id;
+	}
+
+	public Product getProduct() {
+		return product;
+	}
+
+	public void setProduct(Product product) {
+		this.product = product;
+	}
+
+
+	public double getBuyingPrice() {
+		return buyingPrice;
+	}
+
+	public void setBuyingPrice(double buyingPrice) {
+		this.buyingPrice = buyingPrice;
+	}
+
+	public int getProductCount() {
+		return productCount;
+	}
+
+	public void setProductCount(int productCount) {
+		this.productCount = productCount;
+	}
+
+	public double getTotal() {
+		return total;
+	}
+
+	public void setTotal(double total) {
+		this.total = total;
+	}
+		
+}
+
+
+orderdetail.java
+--------------------------------
+@Entity
+@Table(name = "order_detail")
+public class OrderDetail implements Serializable {
+
+	/**
+	 * 
+	 */
+	private static final long serialVersionUID = 1L;
+	@Id
+	@GeneratedValue(strategy = GenerationType.IDENTITY)
+	private int id;
+	@ManyToOne
+	@JoinColumn(name = "user_id")
+	private User user;
+	@Column(name = "order_total")
+	private double orderTotal;
+	@ManyToOne
+	private Address shipping;
+	@ManyToOne
+	private Address billing;
+	@OneToMany(mappedBy="orderDetail", fetch = FetchType.EAGER, cascade = CascadeType.ALL)
+	private List<OrderItem> orderItems = new ArrayList<>();
+	
+	@Column(name = "order_count")
+	private int orderCount;
+	
+	@Column(name="order_date")
+	private Date orderDate;
+	
+	public Date getOrderDate() {
+		return orderDate;
+	}
+	public void setOrderDate(Date orderDate) {
+		this.orderDate = orderDate;
+	}
+	public int getOrderCount() {
+		return orderCount;
+	}
+	public void setOrderCount(int orderCount) {
+		this.orderCount = orderCount;
+	}
+	public User getUser() {
+		return user;
+	}
+	public void setUser(User user) {
+		this.user = user;
+	}
+	public int getId() {
+		return id;
+	}
+	public void setId(int id) {
+		this.id = id;
+	}
+	public double getOrderTotal() {
+		return orderTotal;
+	}
+	public void setOrderTotal(double orderTotal) {
+		this.orderTotal = orderTotal;
+	}
+	public Address getShipping() {
+		return shipping;
+	}
+	public void setShipping(Address shipping) {
+		this.shipping = shipping;
+	}
+	public Address getBilling() {
+		return billing;
+	}
+	public void setBilling(Address billing) {
+		this.billing = billing;
+	}
+	public List<OrderItem> getOrderItems() {
+		return orderItems;
+	}
+	public void setOrderItems(List<OrderItem> orderItems) {
+		this.orderItems = orderItems;
+	} 
+	
+}
+
+
+ userDAO
+ ----------
+    Address getAddress(int addressId);
+	boolean addAddress(Address address);
+	boolean updateAddress(Address address);
+	Address getBillingAddress(int userId);
+	List<Address> listShippingAddresses(int userId);
+cartLineDAO
+-----------	
+boolean addOrderDetails(OrderDetail orderDetail);
+
+daoimpl-
+----------
+@Override
+	public User getByEmail(String email) {
+		String selectQuery = "FROM User WHERE email = :email";
+		try {
+		return sessionFactory
+				.getCurrentSession()
+					.createQuery(selectQuery,User.class)
+						.setParameter("email",email)
+							.getSingleResult();
+		}
+		catch(Exception ex) {
+			return null;
+		}
+							
+	}
+
+	@Override
+	public boolean addAddress(Address address) {
+		try {			
+			// will look for this code later and why we need to change it
+			sessionFactory.getCurrentSession().persist(address);			
+			return true;
+		}
+		catch(Exception ex) {
+			return false;
+		}
+	}
+	
+	@Override
+	public boolean updateAddress(Address address) {
+		try {			
+			sessionFactory.getCurrentSession().update(address);			
+			return true;
+		}
+		catch(Exception ex) {
+			return false;
+		}
+	}	
+	
+
+	@Override
+	public List<Address> listShippingAddresses(int userId) {
+		String selectQuery = "FROM Address WHERE userId = :userId AND shipping = :isShipping ORDER BY id DESC";
+		return sessionFactory
+				.getCurrentSession()
+					.createQuery(selectQuery,Address.class)
+						.setParameter("userId", userId)
+						.setParameter("isShipping", true)
+							.getResultList();
+		
+	}
+
+	@Override
+	public Address getBillingAddress(int userId) {
+		String selectQuery = "FROM Address WHERE userId = :userId AND billing = :isBilling";
+		try{
+		return sessionFactory
+				.getCurrentSession()
+					.createQuery(selectQuery,Address.class)
+						.setParameter("userId", userId)
+						.setParameter("isBilling", true)
+						.getSingleResult();
+		}
+		catch(Exception ex) {
+			return null;
+		}
+	}
+
+	@Override
+	public User get(int id) {
+		try {			
+			return sessionFactory.getCurrentSession().get(User.class, id);			
+		}
+		catch(Exception ex) {
+			System.out.println(ex.getMessage());
+			return null;
+		}
+	}
+
+	@Override
+	public Address getAddress(int addressId) {
+		try {			
+			return sessionFactory.getCurrentSession().get(Address.class, addressId);			
+		}
+		catch(Exception ex) {
+			System.out.println(ex.getMessage());
+			return null;
+		}
+	}
+
+
+
+@Override
+	public boolean add(OrderDetail orderDetail) {
+		try {
+
+			sessionFactory.getCurrentSession().persist(orderDetail);
+
+			return true;
+		}
+
+		catch (Exception ex) {
+			ex.printStackTrace();
+			return false;
+		}
+	}
+
+
+
+checkoutmodel.java
+-------------------------
+package com.dkd.onlineshopping.model;
+
+import java.io.Serializable;
+import java.util.List;
+
+
+public class CheckoutModel implements Serializable {
+
+	/**
+	 * 
+	 */
+	private static final long serialVersionUID = 1L;
+
+	private User user;
+	private Address shipping;
+	private Cart cart;
+	private List<CartLine> cartLines;
+	private OrderDetail orderDetail;
+	private double checkoutTotal;
+
+	public OrderDetail getOrderDetail() {
+		return orderDetail;
+	}
+
+	public void setOrderDetail(OrderDetail orderDetail) {
+		this.orderDetail = orderDetail;
+	}
+
+	public Cart getCart() {
+		return cart;
+	}
+
+	public void setCart(Cart cart) {
+		this.cart = cart;
+	}
+
+	public double getCheckoutTotal() {
+		return checkoutTotal;
+	}
+
+	public void setCheckoutTotal(double checkoutTotal) {
+		this.checkoutTotal = checkoutTotal;
+	}
+
+	public List<CartLine> getCartLines() {
+		return cartLines;
+	}
+
+	public void setCartLines(List<CartLine> cartLines) {
+		this.cartLines = cartLines;
+	}
+
+
+	public User getUser() {
+		return user;
+	}
+
+	public void setUser(User user) {
+		this.user = user;
+	}
+
+	public Address getShipping() {
+		return shipping;
+	}
+
+	public void setShipping(Address shipping) {
+		this.shipping = shipping;
+	}
+	
+}
+
+checkouthandler
+-------------------------------
+package net.kzn.onlineshopping.handler;
+
+import java.util.ArrayList;
+import java.util.Date;
+import java.util.List;
+
+import javax.servlet.http.HttpSession;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Component;
+
+
+@Component
+public class CheckoutHandler {
+
+	private static final Logger logger = LoggerFactory.getLogger(CheckoutHandler.class);
+	
+	@Autowired
+	private UserDAO userDAO;
+	
+	@Autowired
+	private ProductDAO productDAO;
+
+	@Autowired
+	private CartLineDAO cartLineDAO;
+	
+	@Autowired
+	private HttpSession session;
+	
+	
+	public CheckoutModel init(String name) throws Exception{
+
+		User user = userDAO.getByEmail(name);
+		CheckoutModel checkoutModel = null;	
+
+		if(user!=null) {
+			checkoutModel = new CheckoutModel();
+			checkoutModel.setUser(user);
+			checkoutModel.setCart(user.getCart());
+			
+			double checkoutTotal = 0.0;
+			List<CartLine> cartLines = cartLineDAO.listAvailable(user.getCart().getId());
+
+			if(cartLines.size() == 0 ) {
+				throw new Exception("There are no products available for checkout now!");
+			}
+			
+			for(CartLine cartLine: cartLines) {
+				checkoutTotal += cartLine.getTotal();
+			}
+			
+			checkoutModel.setCartLines(cartLines);
+			checkoutModel.setCheckoutTotal(checkoutTotal);			
+		}			
+		
+		return checkoutModel;
+	}
+	
+	
+	public List<Address> getShippingAddresses(CheckoutModel model) {
+				
+		List<Address> addresses = userDAO.listShippingAddresses(model.getUser().getId());
+		
+		if(addresses.size() == 0) {
+			addresses = new ArrayList<>();
+		}
+
+		addresses.add(addresses.size(), userDAO.getBillingAddress(model.getUser().getId()));			
+		
+		return addresses;
+		
+	}
+	
+	public String saveAddressSelection(CheckoutModel checkoutModel, int shippingId) {
+
+		String transitionValue = "success";
+		
+		//logger.info(String.valueOf(shippingId));
+		
+		Address shipping = userDAO.getAddress(shippingId);		
+		
+		checkoutModel.setShipping(shipping);
+		
+		return transitionValue;
+		
+	}
+			
+	
+	public String saveAddress(CheckoutModel checkoutModel, Address shipping) {
+
+		String transitionValue = "success";
+		
+		// set the user id
+		// set shipping as true
+		shipping.setUserId(checkoutModel.getUser().getId());
+		shipping.setShipping(true);
+		userDAO.addAddress(shipping);
+		
+		// set the shipping id to flowScope object
+		checkoutModel.setShipping(shipping);
+		
+		return transitionValue;
+		
+	}
+		
+
+	public String saveOrder(CheckoutModel checkoutModel) {
+		String transitionValue = "success";	
+		
+		// create a new order object
+		OrderDetail orderDetail = new OrderDetail();
+				
+		// attach the user 
+		orderDetail.setUser(checkoutModel.getUser());
+				
+		// attach the shipping address
+		orderDetail.setShipping(checkoutModel.getShipping());
+		
+		// fetch the billing address
+		Address billing = userDAO.getBillingAddress(checkoutModel.getUser().getId());		
+		orderDetail.setBilling(billing);
+
+		List<CartLine> cartLines = checkoutModel.getCartLines();
+		OrderItem orderItem = null;
+		
+		double orderTotal = 0.0;
+		int orderCount = 0;
+		Product product = null;
+		
+		for(CartLine cartLine : cartLines) {
+			
+			orderItem = new OrderItem();
+			
+			orderItem.setBuyingPrice(cartLine.getBuyingPrice());
+			orderItem.setProduct(cartLine.getProduct());
+			orderItem.setProductCount(cartLine.getProductCount());
+			orderItem.setTotal(cartLine.getTotal());
+			
+			orderItem.setOrderDetail(orderDetail);
+			orderDetail.getOrderItems().add(orderItem);
+			
+			orderTotal += orderItem.getTotal();
+			orderCount++;
+			
+			// update the product
+			// reduce the quantity of product
+			product = cartLine.getProduct();
+			product.setQuantity(product.getQuantity() - cartLine.getProductCount());
+			product.setPurchases(product.getPurchases() + cartLine.getProductCount());
+			productDAO.update(product);
+			
+			// delete the cartLine
+			cartLineDAO.remove(cartLine);
+			
+
+			
+		}
+		
+		orderDetail.setOrderTotal(orderTotal);
+		orderDetail.setOrderCount(orderCount);
+		orderDetail.setOrderDate(new Date());
+		
+		// save the order
+		cartLineDAO.addOrderDetail(orderDetail);
+
+		// set it to the orderDetails of checkoutModel
+		checkoutModel.setOrderDetail(orderDetail);
+
+		
+		// update the cart
+		Cart cart = checkoutModel.getCart();
+		cart.setGrandTotal(cart.getGrandTotal() - orderTotal);
+		cart.setCartLines(cart.getCartLines() - orderCount);
+		cartLineDAO.updateCart(cart);
+		
+		// update the cart if its in the session
+		UserModel userModel = (UserModel) session.getAttribute("userModel");
+		if(userModel!=null) {
+			userModel.setCart(cart);
+		}
+		
+				
+		return transitionValue;		
+	}
+
+	
+	public OrderDetail getOrderDetail(CheckoutModel checkoutModel) {
+		return checkoutModel.getOrderDetail();
+	}
+	
+	
+	
+}
+
+
+
+checkoutflow.xml
+---------------------------------
+<?xml version="1.0" encoding="UTF-8"?>
+<flow xmlns="http://www.springframework.org/schema/webflow"
+      xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+      xsi:schemaLocation="http://www.springframework.org/schema/webflow
+                          http://www.springframework.org/schema/webflow/spring-webflow-2.0.xsd">
+	
+
+	<var name="shipping" class="com.dkd.shoppingbackend.dto.Address"/>
+	
+	<on-start>
+		<evaluate expression="checkoutHandler.init(currentUser.name)" result="flowScope.checkoutModel"/>
+	</on-start>
+
+	<!-- view the address selection page-->
+	<view-state id="shipping" view="flows/cart/checkout/order-address" model="shipping">
+		<on-entry>
+			<evaluate expression="checkoutHandler.getShippingAddresses(flowScope.checkoutModel)" result="viewScope.addresses"/>	
+		</on-entry>
+		<transition on="addressSelection" to="saveAddressSelection" validate="false"/>
+		<transition on="saveAddress" to="saveAddress" />
+	</view-state>
+
+	<!-- action state to save the address -->
+	<action-state id="saveAddressSelection">		
+		<evaluate expression="checkoutHandler.saveAddressSelection(flowScope.checkoutModel, requestParameters.shippingId)" />
+		<transition on="success" to="payment" />
+	</action-state>
+
+	
+	<!-- action state to save the address -->
+	<action-state id="saveAddress">		
+		<evaluate expression="checkoutHandler.saveAddress(flowScope.checkoutModel, shipping)" />
+		<transition on="success" to="payment" />
+	</action-state>
+
+	<!-- view the payment mode page-->
+	<view-state id="payment" view="flows/cart/checkout/order-payment" model="flowScope.checkoutModel">		
+		<transition on="pay" to="saveOrder" />	
+	</view-state>
+
+	<!-- action state to save the address -->
+	<action-state id="saveOrder">		
+		<evaluate expression="checkoutHandler.saveOrder(flowScope.checkoutModel)" />
+		<transition on="success" to="receipt"/>
+	</action-state>
+	
+	<!-- end state -->
+	<end-state id="receipt" view="flows/cart/checkout/order-confirm">
+		<on-entry>
+			<evaluate expression="checkoutHandler.getOrderDetail(flowScope.checkoutModel)" result="requestScope.orderDetail"/>
+		</on-entry>
+	</end-state>
+
+	<end-state id="home" view="externalRedirect:contextRelative:/home" />
+	<end-state id="error" view="flows/flows-shared/error" />
+	
+	<!-- global transition -->
+	<global-transitions>
+		<transition on="home" to="home" validate="false" />
+ 		<transition on-exception="java.lang.Exception" to="error" />
+	</global-transitions>
+	
+</flow>
+
+
+orderconfirm.jsp
+-------------------
+<%@ page language="java" contentType="text/html; charset=ISO-8859-1"
+	pageEncoding="ISO-8859-1"%>
+<%@taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core"%>
+<%@taglib prefix="spring" uri="http://www.springframework.org/tags"%>
+
+<spring:url var="css" value="/resources/css" />
+<spring:url var="js" value="/resources/js" />
+<spring:url var="images" value="/resources/images" />
+
+<c:set var="contextRoot" value="${pageContext.request.contextPath}" />
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+<meta charset="utf-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="">
+<meta name="author" content="">
+
+<title>Online Shopping - Membership</title>
+
+<script>
+
+	window.contextRoot = '${contextRoot}'
+	
+</script>
+
+<!-- Bootstrap Core CSS -->
+<link href="${css}/bootstrap.min.css" rel="stylesheet">
+
+<!-- Bootstrap Readable Theme -->
+<link href="${css}/bootstrap-readable-theme.css" rel="stylesheet">
+
+
+<!-- Bootstrap DataTables -->
+<link href="${css}/dataTables.bootstrap.css" rel="stylesheet">
+
+
+<!-- Custom CSS -->
+<link href="${css}/myapp.css" rel="stylesheet">
+
+<!-- HTML5 Shim and Respond.js IE8 support of HTML5 elements and media queries -->
+<!-- WARNING: Respond.js doesn't work if you view the page via file:// -->
+<!--[if lt IE 9]>
+        <script src="https://oss.maxcdn.com/libs/html5shiv/3.7.0/html5shiv.js"></script>
+        <script src="https://oss.maxcdn.com/libs/respond.js/1.4.2/respond.min.js"></script>
+    <![endif]-->
+
+</head>
+
+<body>
+
+<div class="wrapper">
+
+    <nav class="navbar navbar-inverse navbar-fixed-top" role="navigation">
+        <div class="container">
+            <!-- Brand and toggle get grouped for better mobile display -->
+           <div class="navbar-header">
+               <a class="navbar-brand" href="${contextRoot}/home">Online Shopping</a>
+           </div>
+		</div>
+	</nav>
+
+
+	<!-- Page Content -->
+	
+	<div class="content">
+		<div class="container">
+			<div class="alert alert-success">
+				<h3 class="text-center">Your Order is Confirmed!!</h3>
+			</div>
+		    <div class="row">
+		        <div class="col-xs-12">
+		    		<div class="invoice-title">
+		    			<h2>Invoice</h2><h3 class="pull-right">Order # ${orderDetail.id}</h3>
+		    		</div>
+		    		<hr>
+		    		<div class="row">
+		    			<div class="col-xs-6">
+		    				<address>
+		    				<strong>Billed To:</strong><br>
+		    					${orderDetail.user.firstName} ${orderDetail.user.lastName}<br>
+		    					${orderDetail.billing.addressLineOne}<br>
+		    					${orderDetail.billing.addressLineTwo}<br>
+		    					${orderDetail.billing.city} - ${orderDetail.billing.postalCode}<br>
+		    					${orderDetail.billing.state} - ${orderDetail.billing.country}
+		    				</address>
+		    			</div>
+		    			<div class="col-xs-6 text-right">
+		    				<address>
+		        			<strong>Shipped To:</strong><br>
+		    					${orderDetail.user.firstName} ${orderDetail.user.lastName}<br>
+		    					${orderDetail.shipping.addressLineOne}<br>
+		    					${orderDetail.shipping.addressLineTwo}<br>
+		    					${orderDetail.shipping.city} - ${orderDetail.shipping.postalCode}<br>
+		    					${orderDetail.shipping.state} - ${orderDetail.shipping.country}
+		    				</address>
+		    			</div>
+		    		</div>
+		    		<div class="row">
+		    			<div class="col-xs-6">
+		    				<address>
+		    					<strong>Payment Method:</strong><br>
+		    					Card Payment <br>
+		    					${orderDetail.user.email}
+		    				</address>
+		    			</div>
+		    			<div class="col-xs-6 text-right">
+		    				<address>
+		    					<strong>Order Date:</strong><br>
+		    					${orderDetail.orderDate}<br><br>
+		    				</address>
+		    			</div>
+		    		</div>
+		    	</div>
+		    </div>
+		    
+		    <div class="row">
+		    	<div class="col-md-12">
+		    		<div class="panel panel-default">
+		    			<div class="panel-heading">
+		    				<h3 class="panel-title"><strong>Order summary</strong></h3>
+		    			</div>
+		    			<div class="panel-body">
+		    				<div class="table-responsive">
+		    					<table class="table table-condensed">
+		    						<thead>
+		                                <tr>
+		        							<td><strong>Item</strong></td>
+		        							<td class="text-center"><strong>Price</strong></td>
+		        							<td class="text-center"><strong>Quantity</strong></td>
+		        							<td class="text-right"><strong>Totals</strong></td>
+		                                </tr>
+		    						</thead>
+		    						<tbody>
+		    							<!-- foreach ($order->lineItems as $line) or some such thing here -->
+		    							<c:forEach items="${orderDetail.orderItems}" var="orderItem">
+			    							<tr>
+			    								<td>${orderItem.product.name}</td>
+			    								<td class="text-center">&#8377; ${orderItem.buyingPrice}</td>
+			    								<td class="text-center">${orderItem.productCount}</td>
+			    								<td class="text-right">&#8377; ${orderItem.total}</td>
+			    							</tr>
+		    							</c:forEach>
+		    						</tbody>
+		    					</table>
+		    				</div>
+		    			</div>
+		    		</div>
+		    	</div>
+		    </div>
+		    <div class="text-center">
+		    	<a href="${contextRoot}/show/all/products" class="btn btn-lg btn-warning">Continue Shopping</a>
+		    </div>
+		</div>
+<%@include file="../../flows-shared/footer.jsp" %>	
+
+
+
+
+
+
+orderaddress.jsp
+----------------------
+<%@include file="../../flows-shared/header.jsp" %>
+<%@taglib prefix="sf" uri="http://www.springframework.org/tags/form" %>			
+<div class="container">
+
+	<div class="row">
+		
+			<div class="col-md-4">
+				
+				<h4>Select Shipping Address</h4>
+				<hr/>
+				
+				<div class="row">
+					<c:forEach items="${addresses}" var="address">					
+						<div class="cols-xs-12">
+							<h3>${address.addressLineOne}</h3>
+							<h3>${address.addressLineTwo}</h3>
+							<h4>${address.city} - ${address.postalCode}</h4>
+							<h4>${address.state} - ${address.country}</h4>
+							<hr/>
+							<div class="text-center">
+								<a href="${flowExecutionUrl}&_eventId_addressSelection&shippingId=${address.id}" class="btn btn-primary">Select</a>
+							</div>												
+						</div>
+					</c:forEach>			
+				</div>
+	
+	
+			</div>		
+			
+			<div class="col-md-8">
+			
+				
+				<div class="panel panel-primary">
+				
+					<div class="panel-heading">
+						<h4>Sign Up - Address</h4>
+					</div>
+					
+					<div class="panel-body">
+										
+						<sf:form
+							method="POST"
+							modelAttribute="shipping"
+							class="form-horizontal"
+							id="billingForm"
+						>
+						
+							
+							<div class="form-group">
+								<label class="control-label col-md-4" for="addressLineOne">Address Line One</label>
+								<div class="col-md-8">
+									<sf:input type="text" path="addressLineOne" class="form-control"
+										placeholder="Enter Address Line One" />
+									<sf:errors path="addressLineOne" cssClass="help-block" element="em"/> 
+								</div>
+							</div>
+
+							<div class="form-group">
+								<label class="control-label col-md-4" for="addressLineTwo">Address Line Two</label>
+								<div class="col-md-8">
+									<sf:input type="text" path="addressLineTwo" class="form-control"
+										placeholder="Enter Address Line Two" />
+									<sf:errors path="addressLineTwo" cssClass="help-block" element="em"/> 
+								</div>
+							</div>
+
+							<div class="form-group">
+								<label class="control-label col-md-4" for="city">City</label>
+								<div class="col-md-8">
+									<sf:input type="text" path="city" class="form-control"
+										placeholder="Enter City Name" />
+									<sf:errors path="city" cssClass="help-block" element="em"/> 
+								</div>
+							</div>
+							
+							<div class="form-group">
+								<label class="control-label col-md-4" for="postalCode">Postal Code</label>
+								<div class="col-md-8">
+									<sf:input type="text" path="postalCode" class="form-control"
+										placeholder="XXXXXX" />
+									<sf:errors path="postalCode" cssClass="help-block" element="em"/> 
+								</div>
+							</div>							
+						
+							<div class="form-group">
+								<label class="control-label col-md-4" for="state">State</label>
+								<div class="col-md-8">
+									<sf:input type="text" path="state" class="form-control"
+										placeholder="Enter State Name" />
+									<sf:errors path="state" cssClass="help-block" element="em"/> 
+								</div>
+							</div>
+
+							<div class="form-group">
+								<label class="control-label col-md-4" for="country">Country</label>
+								<div class="col-md-8">
+									<sf:input type="text" path="country" class="form-control"
+										placeholder="Enter Country Name" />
+									<sf:errors path="country" cssClass="help-block" element="em"/> 
+								</div>
+							</div>
+							
+							
+							<div class="form-group">
+								<div class="col-md-offset-4 col-md-8">
+									<button type="submit" name="_eventId_saveAddress" class="btn btn-primary">
+										<span class="glyphicon glyphicon-plus"></span> Add Address
+									</button>																	 
+								</div>
+							</div>
+						
+						
+						</sf:form>					
+					
+					
+					</div>
+				
+				
+				</div>
+			
+								
+			
+			</div>
+			
+
+	</div>	
+
+</div>	
+<%@include file="../../flows-shared/footer.jsp" %>	
+
+
+
+
+
+
+orderpayment.jsp
+--------------------------
+
+<%@include file="../../flows-shared/header.jsp" %>
+<div class="container">
+
+	<div class="row">
+			<!--  To display all the goods -->
+			<div class="col-md-6">
+				
+				<div class="row">
+					<c:forEach items="${checkoutModel.cartLines}" var="cartLine">
+					<div class="col-xs-12">
+						
+						<div>
+							<h3>${cartLine.product.name}</h3>
+							<hr/>
+							<h4>Quantity -${cartLine.productCount}</h4>
+							<h5>Buying Price - &#8377; ${cartLine.buyingPrice}/-</h5>							
+						</div>						
+						<hr/>
+						<div class="text-right">
+							<h3>Grand Total - &#8377; ${cartLine.total}/-</h3>
+						</div>						
+					</div>
+					</c:forEach>
+				</div>
+				
+				
+			</div>
+			
+			<div class="col-md-6">
+	            <div class="panel panel-default">
+	                <div class="panel-heading">
+	                    <h3 class="panel-title">
+	                        Payment Details
+	                    </h3>
+	                </div>
+	                <div class="panel-body">
+	                    <form role="form">
+	                    <div class="form-group">
+	                        <label for="cardNumber">
+	                            CARD NUMBER</label>
+	                        <div class="input-group">
+	                            <input type="text" class="form-control" id="cardNumber" placeholder="Valid Card Number"
+	                                required autofocus />
+	                            <span class="input-group-addon"><span class="glyphicon glyphicon-lock"></span></span>
+	                        </div>
+	                    </div>
+	                    <div class="row">
+	                        <div class="col-xs-7 col-md-7">
+	                            <div class="form-group">
+	                                <label for="expityMonth">EXPIRY DATE</label>
+	                                <br/>
+	                                <div class="col-xs-6 col-lg-6 pl-ziro">
+	                                    <input type="text" class="form-control" id="expityMonth" placeholder="MM" required />
+	                                </div>
+	                                <div class="col-xs-6 col-lg-6 pl-ziro">
+	                                    <input type="text" class="form-control" id="expityYear" placeholder="YY" required /></div>
+	                            </div>
+	                        </div>
+	                        <div class="col-xs-5 col-md-5 pull-right">
+	                            <div class="form-group">
+	                                <label for="cvCode">
+	                                    CV CODE</label>
+	                                <input type="password" class="form-control" id="cvCode" placeholder="CV" required />
+	                            </div>
+	                        </div>
+	                    </div>
+	                    </form>
+	                </div>
+	            </div>
+	            <ul class="nav nav-pills nav-stacked">
+	                <li class="active"><a href="#"><span class="badge pull-right"> &#8377; ${checkoutModel.checkoutTotal}/-</span> Final Payment</a></li>
+	            </ul>
+	            <br/>
+	            <a href="${flowExecutionUrl}&_eventId_pay" class="btn btn-success btn-lg btn-block" role="button">Pay</a>
+			
+			</div>
+
+	</div>
+</div>
+<%@include file="../../flows-shared/footer.jsp" %>
+
+
+
+
